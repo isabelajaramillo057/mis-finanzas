@@ -799,11 +799,20 @@ function b64enc(str){const bytes=new TextEncoder().encode(str);let bin='';for(le
 function b64dec(b){const bin=atob(b);const bytes=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);return new TextDecoder().decode(bytes)}
 function datosCopia(){return {v:1,fecha:ymd(new Date()),deudas:mem.deudas,gastos:mem.gastos,movimientos:mem.movimientos,config:mem.config}}
 function codigoCopia(){return 'FINANZAS1:'+b64enc(JSON.stringify(datosCopia()))}
+function validarCopia(o){if(!o||typeof o!=='object'||!o.deudas||typeof o.deudas!=='object')throw new Error('formato');return o}
 function leerCodigo(txt){
-  txt=String(txt||'').trim();let json;
-  if(txt.charAt(0)==='{')json=txt;
-  else{const i=txt.indexOf('FINANZAS1:');if(i<0)throw new Error('formato');json=b64dec(txt.slice(i+10).replace(/[^A-Za-z0-9+/=]/g,''))}
-  const o=JSON.parse(json);if(!o||typeof o!=='object'||typeof o.deudas!=='object')throw new Error('formato');return o;
+  txt=String(txt||'').trim();
+  if(txt.charAt(0)==='{')return validarCopia(JSON.parse(txt));
+  // Acepta el código pegado dos veces, con espacios o saltos de línea, con texto alrededor o sin "FINANZAS1:".
+  const partes=txt.split(/FINANZAS1\s*:/i);
+  const candidatos=partes.length>1?partes.slice(1).reverse():[txt];
+  for(const p of candidatos){
+    let b=p.replace(/[^A-Za-z0-9+/=]/g,'');const eq=b.indexOf('=');if(eq>=0)b=b.slice(0,eq);
+    const m=b.match(/eyJ[A-Za-z0-9+/]*/);if(m)b=m[0];
+    while(b.length%4)b+='=';
+    try{return validarCopia(JSON.parse(b64dec(b)))}catch(e){}
+  }
+  throw new Error('formato');
 }
 const tieneDatos=()=>Object.keys(mem.deudas).length+Object.keys(mem.gastos).length+Object.keys(mem.movimientos).length>0;
 function importar(o){
@@ -839,7 +848,7 @@ $('#btn-descargar-copia').addEventListener('click',()=>{
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-importar]');if(!b)return;
   const ta=document.getElementById(b.dataset.importar);let o;
-  try{o=leerCodigo(ta.value)}catch(err){toast('Ese código no se pudo leer. Cópielo completo, desde FINANZAS1: hasta el final.');return}
+  try{o=leerCodigo(ta.value)}catch(err){ta.value='';toast('No se pudo leer el código. Borré el cuadro: copie el mensaje completo de WhatsApp y péguelo una sola vez.');return}
   if(tieneDatos()&&b.dataset.armado!=='1'){b.dataset.armado='1';b.textContent='Sí, reemplazar todo lo de este teléfono';b.classList.add('danger');return}
   b.dataset.armado='';b.classList.remove('danger');b.textContent=b.dataset.importar==='in-codigo-rec'?'Recuperar con este código':'Cargar mis datos';
   importar(o);ta.value='';location.hash='inicio';
