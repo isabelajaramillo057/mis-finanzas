@@ -2,7 +2,7 @@
  "name": "Mis Finanzas",
  "short_name": "Mis Finanzas",
  "lang": "es",
- "start_url": "./",
+ "start_url": "./?app=3",
  "scope": "./",
  "display": "standalone",
  "background_color": "#F2F4F7",
