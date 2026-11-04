@@ -232,7 +232,9 @@ nav.bottom a[aria-current="page"]{color:var(--accent)}
       <label for="in-codigo-inicio" class="small" style="font-weight:700">Código</label>
       <textarea id="in-codigo-inicio" class="codebox" placeholder="FINANZAS1:..." autocomplete="off" autocapitalize="off" spellcheck="false"></textarea>
       <button class="btn primary block" data-importar="in-codigo-inicio">Cargar mis datos</button>
+      <p class="notice" id="diag-inicio" hidden style="margin:0;word-break:break-all"></p>
       <button class="linkbtn" id="btn-en-blanco" style="align-self:center">Empezar en blanco</button>
+      <p class="muted small" style="margin:0;text-align:center">Versión 3</p>
     </section>
 
     <section class="card" aria-labelledby="t-semana">
@@ -848,7 +850,11 @@ $('#btn-descargar-copia').addEventListener('click',()=>{
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-importar]');if(!b)return;
   const ta=document.getElementById(b.dataset.importar);let o;
-  try{o=leerCodigo(ta.value)}catch(err){ta.value='';toast('No se pudo leer el código. Borré el cuadro: copie el mensaje completo de WhatsApp y péguelo una sola vez.');return}
+  try{o=leerCodigo(ta.value)}catch(err){
+    const v=String(ta.value||'').trim();const d=document.getElementById('diag-inicio');
+    if(d&&b.dataset.importar==='in-codigo-inicio'){d.hidden=false;d.textContent='No se pudo leer el código (versión 3). Recibí '+v.length+' letras. Empieza con «'+v.slice(0,14)+'» y termina con «'+v.slice(-10)+'». El código completo tiene 3,142 letras. Borre el cuadro y pegue otra vez.'}
+    toast('No se pudo leer el código.');return}
+  const dg=document.getElementById('diag-inicio');if(dg)dg.hidden=true;
   if(tieneDatos()&&b.dataset.armado!=='1'){b.dataset.armado='1';b.textContent='Sí, reemplazar todo lo de este teléfono';b.classList.add('danger');return}
   b.dataset.armado='';b.classList.remove('danger');b.textContent=b.dataset.importar==='in-codigo-rec'?'Recuperar con este código':'Cargar mis datos';
   importar(o);ta.value='';location.hash='inicio';
